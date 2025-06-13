@@ -1,0 +1,28 @@
+# Flowbot Configuration
+
+# Trading parameters
+quantity:
+  type: uniform
+  min: 0.5
+  max: 2.0
+
+# Time between trades (seconds) - much slower now
+interval:
+  type: uniform
+  min: 30
+  max: 60
+
+# Probability of buying vs selling (0.5 = 50/50)
+p_buy: 0.5
+
+# Maximum spend per market (USDC)
+max_spend_per_market: 2.0
+
+# Manual approval mode
+manual_approval: true
+
+# Markets will be automatically discovered from Gamma API
+# You can optionally specify markets here to override auto-discovery:
+# markets:
+#   - "token_id_1"
+#   - "token_id_2" 
