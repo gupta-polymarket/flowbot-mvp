@@ -261,8 +261,11 @@ class MarketMaker:
                 except:
                     logger.debug("Client doesn't support negrisk parameter")
             
+            # Create and sign the order first
+            signed_order = self.client.create_order(order_args)
+            
             # Submit order as GTC (Good-Till-Cancelled)
-            response = self.client.create_and_post_order(order_args)
+            response = self.client.post_order(signed_order, OrderType.GTC)
             
             # Extract order ID from response
             order_id = None

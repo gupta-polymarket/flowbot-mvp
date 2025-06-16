@@ -511,8 +511,11 @@ def execute_trade(client: ClobClient, token_id: str, side: str, quantity: float,
             except:
                 logger.debug("Client doesn't support negrisk parameter, continuing without it")
         
-        # Use the newer create_and_post_order method with GTC (Good-Till-Cancelled)
-        response = client.create_and_post_order(order_args)
+        # Create and sign the order first
+        signed_order = client.create_order(order_args)
+        
+        # Post the order as GTC (Good-Till-Cancelled)
+        response = client.post_order(signed_order, OrderType.GTC)
         
         success = response.get("success", False)
         if success:
@@ -560,14 +563,16 @@ def setup_clob_client() -> ClobClient:
         
         # Create client
         if funding_address:
-            # Using proxy wallet
+            # Using proxy wallet with Email/Magic configuration (signature_type=1)
+            # This is the working configuration based on our testing
             client = ClobClient(
                 host=clob_host,
                 key=private_key,
                 chain_id=POLYGON_CHAIN_ID,
-                signature_type=1,  # POLY_PROXY
+                signature_type=1,  # Email/Magic proxy mode
                 funder=funding_address
             )
+            logger.info("Using Email/Magic proxy mode (signature_type=1)")
         else:
             # Direct EOA
             client = ClobClient(
@@ -575,6 +580,7 @@ def setup_clob_client() -> ClobClient:
                 key=private_key,
                 chain_id=POLYGON_CHAIN_ID
             )
+            logger.info("Using Direct EOA mode")
         
         # Set API credentials
         logger.debug("Setting API credentials...")
@@ -705,6 +711,32 @@ def run_single_iteration(client: ClobClient, token_ids: List[str], config: Dict[
         
         # Small delay to avoid rate limiting
         time.sleep(1.0)
+        
+        # Check price filtering (10-90 cents)
+        min_price = config.get("min_price", 0.10)  # Default 10 cents
+        max_price = config.get("max_price", 0.90)  # Default 90 cents
+        
+        if side == "BUY":
+            if not orderbook.asks:
+                print(f"❌ No asks available for this market")
+                logger.warning(f"No asks available for token {token_id}")
+                return
+            best_price = float(orderbook.asks[0].price)
+        else:  # SELL
+            if not orderbook.bids:
+                print(f"❌ No bids available for this market")
+                logger.warning(f"No bids available for token {token_id}")
+                return
+            best_price = float(orderbook.bids[0].price)
+        
+        # Apply price filter
+        if best_price < min_price or best_price > max_price:
+            print(f"📊 Price filter: ${best_price:.4f} outside range ${min_price:.2f}-${max_price:.2f}")
+            print(f"⏭️  Skipping - price not in target range...")
+            logger.info(f"Price {best_price:.4f} outside range {min_price:.2f}-{max_price:.2f}, skipping")
+            return
+        
+        print(f"✅ Price ${best_price:.4f} is in target range ${min_price:.2f}-${max_price:.2f}")
         
         # Execute trade (this will handle manual approval)
         execute_trade(client, token_id, side, quantity, orderbook, config)

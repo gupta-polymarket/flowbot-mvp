@@ -6,7 +6,7 @@ import os
 import time
 from dotenv import load_dotenv
 from py_clob_client.client import ClobClient
-from py_clob_client.clob_types import OrderArgs
+from py_clob_client.clob_types import OrderArgs, OrderType
 from py_clob_client.order_builder.constants import BUY, SELL
 
 def test_single_trade():
@@ -104,8 +104,11 @@ def test_single_trade():
         print("✅ Order arguments created")
         print("📤 Submitting order to CLOB...")
         
-        # Submit the order
-        response = client.create_and_post_order(order_args)
+        # Create and sign the order first
+        signed_order = client.create_order(order_args)
+        
+        # Submit the order as GTC
+        response = client.post_order(signed_order, OrderType.GTC)
         
         print("🎉 ORDER SUBMITTED SUCCESSFULLY!")
         print(f"📋 Response: {response}")

@@ -3,8 +3,8 @@
 # Trading parameters
 quantity:
   type: uniform
-  min: 0.1
-  max: 0.3
+  min: 1.0
+  max: 2.0
 
 # Time between trades (seconds) - much slower now
 interval:
@@ -12,11 +12,15 @@ interval:
   min: 30
   max: 60
 
-# Probability of buying vs selling (0.5 = 50/50)
-p_buy: 0.5
+# Probability of buying vs selling (1.0 = 100% BUY, 0.0 = 100% SELL)
+p_buy: 1.0
 
 # Maximum spend per market (USDC)
-max_spend_per_market: 2.0
+max_spend_per_market: 5.0
+
+# Price filtering - only trade on outcomes with prices in this range
+min_price: 0.10
+max_price: 0.90
 
 # Manual approval mode
 manual_approval: true
