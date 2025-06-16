@@ -1,0 +1,14 @@
+# Flowbot Environment Configuration
+# Your Coinbase wallet: 0xdBe52861b497b6D83f4757DB89ECC028896eccA4
+
+# Your Polymarket developer/trading key
+PRIVATE_KEY=0xb9cd3955c83589cb8a9f72515e34ea2c67b21ff8b8bd170f55598a04a84c60a1
+
+# Leave FUNDING_ADDRESS empty for direct EOA (recommended)
+FUNDING_ADDRESS=
+
+# Optional: CLOB API URL. Defaults to https://clob.polymarket.com
+CLOB_API_URL=https://clob.polymarket.com
+
+# Comma-separated list of token IDs (leave blank to use all active markets)
+MARKET_IDS= 

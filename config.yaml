@@ -3,8 +3,8 @@
 # Trading parameters
 quantity:
   type: uniform
-  min: 0.5
-  max: 2.0
+  min: 0.1
+  max: 0.3
 
 # Time between trades (seconds) - much slower now
 interval:
@@ -25,4 +25,21 @@ manual_approval: true
 # You can optionally specify markets here to override auto-discovery:
 # markets:
 #   - "token_id_1"
-#   - "token_id_2" 
+#   - "token_id_2"
+
+# Market Maker Configuration
+market_maker:
+  # Order size per level in USDC
+  order_size: 1.0
+  
+  # Target spread as decimal (0.02 = 2%)
+  spread_target: 0.02
+  
+  # Maximum position per token in USDC
+  max_position: 10.0
+  
+  # Number of price levels to quote on each side
+  price_levels: 3
+  
+  # Time between order refreshes (seconds)
+  refresh_interval: 30 
