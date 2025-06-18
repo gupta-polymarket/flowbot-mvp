@@ -1,0 +1,57 @@
+# Taker Bot Configuration - Spread Tightening Specialist
+
+# Maximum spend per side in USDC
+max_spend_per_side: 2.0
+
+# Time between trading iterations (seconds)
+interval:
+  type: uniform
+  min: 10
+  max: 20
+
+# Manual approval for each trade
+manual_approval: true
+
+# Spread analysis parameters
+spread_analysis:
+  # Minimum spread to consider for tightening (in dollars)
+  min_spread: 0.01
+  
+  # Threshold for taking orders (% of spread from best price to mid)
+  # 0.25 means take orders within 25% of the spread from best to mid
+  taking_threshold: 0.25
+  
+  # Skip markets with spreads tighter than this (already efficient)
+  skip_if_spread_below: 0.01
+
+# Order execution parameters
+order_execution:
+  # Minimum order size in USDC
+  min_order_size: 1.0
+  
+  # Delay between order executions (seconds)
+  execution_delay: 1.0
+
+# Market selection (if no URLs provided)
+market_discovery:
+  # Use active markets from Gamma API
+  use_gamma_api: true
+  
+  # Price filtering - only trade on outcomes with prices in this range
+  min_price: 0.05
+  max_price: 0.95
+  
+  # Exclude markets close to expiration (hours)
+  exclude_expiring_within_hours: 2
+
+# Specific markets to target (optional)
+# If provided, these will be used instead of auto-discovery
+# markets:
+#   - "https://polymarket.com/event/presidential-election-winner"
+#   - "https://polymarket.com/event/another-market"
+
+# Logging configuration
+logging:
+  level: INFO  # DEBUG, INFO, WARNING, ERROR
+  show_orderbook_details: false
+  show_execution_details: true 

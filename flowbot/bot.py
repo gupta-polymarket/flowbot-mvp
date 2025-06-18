@@ -621,15 +621,22 @@ def run_trading_loop(client: ClobClient, token_ids: List[str], config: Dict[str,
         try:
             if dry_run:
                 run_dry_iteration(token_ids, config)
+                # Always pause in dry run mode
+                sleep_time = sample_interval(config)
+                print(f"\n⏰ Next opportunity in {sleep_time:.0f} seconds...")
+                print("💤 Waiting for next trading window...")
+                logger.info(f"Sleeping for {sleep_time:.1f} seconds...")
+                time.sleep(sleep_time)
             else:
+                # Run the iteration (will search until valid market found)
                 run_single_iteration(client, token_ids, config)
-            
-            # Sleep between iterations
-            sleep_time = sample_interval(config)
-            print(f"\n⏰ Next opportunity in {sleep_time:.0f} seconds...")
-            print("💤 Waiting for next trading window...")
-            logger.info(f"Sleeping for {sleep_time:.1f} seconds...")
-            time.sleep(sleep_time)
+                
+                # Only pause AFTER a successful trade or max attempts reached
+                sleep_time = sample_interval(config)
+                print(f"\n⏰ Next trading search in {sleep_time:.0f} seconds...")
+                print("💤 Waiting before next search...")
+                logger.info(f"Sleeping for {sleep_time:.1f} seconds...")
+                time.sleep(sleep_time)
             
         except KeyboardInterrupt:
             logger.info("Received interrupt signal, stopping...")
@@ -637,7 +644,8 @@ def run_trading_loop(client: ClobClient, token_ids: List[str], config: Dict[str,
         except Exception as e:
             logger.error(f"Error in iteration {iteration_count}: {e}")
             logger.info("Continuing to next iteration...")
-            time.sleep(5)  # Brief pause before retry
+            # Brief pause before retry on error
+            time.sleep(5)
     
     logger.info("=== Flowbot Stopped ===")
     
@@ -667,84 +675,99 @@ def run_dry_iteration(token_ids: List[str], config: Dict[str, Any]):
 
 
 def run_single_iteration(client: ClobClient, token_ids: List[str], config: Dict[str, Any]):
-    """Run a single trading iteration"""
+    """Run a single trading iteration - keep searching until a valid market is found"""
     print("\n" + "🔄 " + "="*78)
-    print("🤖 FLOWBOT - NEW TRADING OPPORTUNITY")
+    print("🤖 FLOWBOT - SEARCHING FOR TRADING OPPORTUNITY")
     print("="*80)
     
     logger.info("=== Starting new iteration ===")
     
-    # Sample parameters
-    token_id = random.choice(token_ids)
-    side = "BUY" if random.random() < config.get("p_buy", 0.5) else "SELL"
-    quantity = sample_quantity(config)
+    # Keep searching until we find a valid market
+    max_attempts = 50  # Prevent infinite loops
+    attempt = 0
     
-    print(f"🎲 Randomly selected token: {token_id}")
-    print(f"📊 Checking market conditions...")
-    
-    logger.info(f"Sampled: token_id={token_id}, side={side}, quantity={quantity}")
-    
-    # Check budget
-    max_spend = config.get("max_spend_per_market", float('inf'))
-    spent_so_far = _spent_usdc.get(token_id, 0)
-    
-    if spent_so_far >= max_spend:
-        print(f"💸 Budget limit reached for this market!")
-        print(f"   Already spent: ${spent_so_far:.2f}")
-        print(f"   Market limit: ${max_spend:.2f}")
-        print("⏭️  Skipping to next opportunity...")
-        logger.info(f"Budget limit reached for token {token_id} ({spent_so_far:.4f}/{max_spend:.4f} USDC)")
-        return
-    
-    # Adjust quantity if needed
-    remaining_budget = max_spend - spent_so_far
-    if quantity > remaining_budget:
-        quantity = remaining_budget
-        print(f"💰 Adjusting trade size to remaining budget: ${quantity:.2f}")
-        logger.info(f"Adjusted quantity to {quantity:.4f} USDC (remaining budget)")
-    
-    try:
-        # Fetch orderbook
-        print(f"📈 Fetching live orderbook data...")
-        logger.debug(f"Fetching orderbook for token {token_id}")
-        orderbook = client.get_order_book(token_id)
+    while attempt < max_attempts:
+        attempt += 1
         
-        # Small delay to avoid rate limiting
-        time.sleep(1.0)
+        # Sample parameters for this attempt
+        token_id = random.choice(token_ids)
+        side = "BUY" if random.random() < config.get("p_buy", 0.5) else "SELL"
+        quantity = sample_quantity(config)
         
-        # Check price filtering (10-90 cents)
-        min_price = config.get("min_price", 0.10)  # Default 10 cents
-        max_price = config.get("max_price", 0.90)  # Default 90 cents
+        print(f"🎲 Attempt {attempt}: Checking token {token_id[:20]}...")
+        logger.info(f"Attempt {attempt}: token_id={token_id}, side={side}, quantity={quantity}")
         
-        if side == "BUY":
-            if not orderbook.asks:
-                print(f"❌ No asks available for this market")
-                logger.warning(f"No asks available for token {token_id}")
-                return
-            best_price = float(orderbook.asks[0].price)
-        else:  # SELL
-            if not orderbook.bids:
-                print(f"❌ No bids available for this market")
-                logger.warning(f"No bids available for token {token_id}")
-                return
-            best_price = float(orderbook.bids[0].price)
+        # Check budget first
+        max_spend = config.get("max_spend_per_market", float('inf'))
+        spent_so_far = _spent_usdc.get(token_id, 0)
         
-        # Apply price filter
-        if best_price < min_price or best_price > max_price:
-            print(f"📊 Price filter: ${best_price:.4f} outside range ${min_price:.2f}-${max_price:.2f}")
-            print(f"⏭️  Skipping - price not in target range...")
-            logger.info(f"Price {best_price:.4f} outside range {min_price:.2f}-{max_price:.2f}, skipping")
+        if spent_so_far >= max_spend:
+            print(f"💸 Budget limit reached for this market, trying another...")
+            logger.debug(f"Budget limit reached for token {token_id}")
+            continue
+        
+        # Adjust quantity if needed
+        remaining_budget = max_spend - spent_so_far
+        if quantity > remaining_budget:
+            quantity = remaining_budget
+            print(f"💰 Adjusting trade size to remaining budget: ${quantity:.2f}")
+            logger.info(f"Adjusted quantity to {quantity:.4f} USDC (remaining budget)")
+        
+        try:
+            # Fetch orderbook
+            print(f"📈 Fetching orderbook data...")
+            logger.debug(f"Fetching orderbook for token {token_id}")
+            orderbook = client.get_order_book(token_id)
+            
+            # Small delay to avoid rate limiting
+            time.sleep(0.5)
+            
+            # Check price filtering (10-90 cents)
+            min_price = config.get("min_price", 0.10)  # Default 10 cents
+            max_price = config.get("max_price", 0.90)  # Default 90 cents
+            
+            if side == "BUY":
+                if not orderbook.asks:
+                    print(f"❌ No asks available, trying another market...")
+                    logger.debug(f"No asks available for token {token_id}")
+                    continue
+                best_price = float(orderbook.asks[0].price)
+            else:  # SELL
+                if not orderbook.bids:
+                    print(f"❌ No bids available, trying another market...")
+                    logger.debug(f"No bids available for token {token_id}")
+                    continue
+                best_price = float(orderbook.bids[0].price)
+            
+            # Apply price filter
+            if best_price < min_price or best_price > max_price:
+                print(f"📊 Price ${best_price:.4f} outside range ${min_price:.2f}-${max_price:.2f}, trying another...")
+                logger.debug(f"Price {best_price:.4f} outside range {min_price:.2f}-{max_price:.2f}")
+                continue
+            
+            # Found a valid market!
+            print(f"✅ Found valid market! Price ${best_price:.4f} is in range ${min_price:.2f}-${max_price:.2f}")
+            print(f"🎯 TRADING OPPORTUNITY FOUND (attempt {attempt})")
+            
+            # Execute trade (this will handle manual approval)
+            execute_trade(client, token_id, side, quantity, orderbook, config)
+            
+            # Trade completed successfully, exit the search loop
+            logger.info(f"Trade completed successfully after {attempt} attempts")
             return
-        
-        print(f"✅ Price ${best_price:.4f} is in target range ${min_price:.2f}-${max_price:.2f}")
-        
-        # Execute trade (this will handle manual approval)
-        execute_trade(client, token_id, side, quantity, orderbook, config)
-        
-    except Exception as e:
-        print(f"❌ Error occurred: {e}")
-        logger.error(f"Error in iteration: {e}")
-        raise
+            
+        except Exception as e:
+            print(f"❌ Error with this market: {e}")
+            logger.error(f"Error in attempt {attempt}: {e}")
+            continue
+    
+    # If we get here, we couldn't find a valid market after max_attempts
+    print(f"⚠️  Could not find a valid market after {max_attempts} attempts")
+    print(f"💡 This might mean:")
+    print(f"   - Most markets are outside the price range (${config.get('min_price', 0.10):.2f}-${config.get('max_price', 0.90):.2f})")
+    print(f"   - Budget limits reached on many markets")
+    print(f"   - Low liquidity period")
+    logger.warning(f"No valid market found after {max_attempts} attempts")
 
 
 def resolve_polymarket_url(url: str) -> List[str]:
