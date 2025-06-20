@@ -3,6 +3,9 @@
 # Maximum spend per side in USDC
 max_spend_per_side: 2.0
 
+# Trading mode - set to true to only place BUY orders (take ask orders to tighten spread from ask side)
+buy_only: false
+
 # Time between trading iterations (seconds)
 interval:
   type: uniform
