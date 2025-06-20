@@ -133,6 +133,39 @@ def example_custom_strategy():
     # success = taker_bot.process_market(token_id)
 
 
+def example_buy_only_mode():
+    """Example: Buy-only mode (ask taking only)"""
+    print("🎯 Buy-Only Mode Example")
+    print("=" * 50)
+    
+    # Load configuration
+    config = load_config()
+    
+    # Setup CLOB client
+    print("Setting up CLOB client...")
+    client = setup_clob_client()
+    
+    # Target specific token (Elon Musk trillionaire market - Yes outcome)
+    token_ids = [
+        "79568323261012554777078819562047190973622507761399603984660423680649834218068"  # Yes
+    ]
+    
+    print("🛒 Running in BUY-ONLY mode")
+    print("Strategy: Only taking ASK orders (buying) to tighten spread from ask side")
+    print("Budget: Using $4 total (double budget for ask taking only)")
+    
+    # Create taker bot in buy-only mode
+    taker_bot = SpreadTighteningBot(client, config, max_spend_per_side=2.0, buy_only=True)
+    
+    # Run for 3 iterations with faster intervals
+    print("Starting buy-only spread tightening session...")
+    taker_bot.run_session(
+        token_ids=token_ids,
+        iterations=3,
+        interval_range=(15, 25)
+    )
+
+
 def example_dry_run():
     """Example: Analyze markets without trading"""
     print("🎯 Dry Run Example")
@@ -166,10 +199,11 @@ if __name__ == "__main__":
     print("1. Basic usage (random markets)")
     print("2. Specific markets (by URL)")
     print("3. Custom strategy analysis")
-    print("4. Dry run (analysis only)")
+    print("4. Buy-only mode (ask taking only)")
+    print("5. Dry run (analysis only)")
     print()
     
-    choice = input("Choose an example (1-4): ").strip()
+    choice = input("Choose an example (1-5): ").strip()
     
     try:
         if choice == "1":
@@ -179,9 +213,11 @@ if __name__ == "__main__":
         elif choice == "3":
             example_custom_strategy()
         elif choice == "4":
+            example_buy_only_mode()
+        elif choice == "5":
             example_dry_run()
         else:
-            print("Invalid choice. Please run again and choose 1-4.")
+            print("Invalid choice. Please run again and choose 1-5.")
     except KeyboardInterrupt:
         print("\n🛑 Example stopped by user")
     except Exception as e:
