@@ -1,0 +1,40 @@
+{
+    "data": [
+        {
+            "condition_id": "0xac1b6017f9447f21dfd69829b5d7b084aef5893f7ddd6abdca8d95f40238f398",
+            "question": "Will Tesla launch a driverless Robotaxi service before July?",
+            "market_slug": "will-tesla-launch-a-driverless-robtotaxi-service-before-july",
+            "event_slug": "will-tesla-launch-a-driverless-robtotaxi-service-before-july",
+            "image": "https://polymarket-upload.s3.us-east-2.amazonaws.com/will-tesla-launch-a-driverless-robtotaxi-service-before-july-WTL3zNcOnj88.jpg",
+            "tokens": [
+                {
+                    "token_id": "88613172803544318200496156596909968959424174365708473463931555296257475886634",
+                    "outcome": "Yes",
+                    "price": 0.125
+                },
+                {
+                    "token_id": "93025177978745967226369398316375153283719303181694312089956059680730874301533",
+                    "outcome": "No",
+                    "price": 0.875
+                }
+            ],
+            "rewards_config": [
+                {
+                    "asset_address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+                    "start_date": "2025-05-29",
+                    "end_date": "2500-12-31",
+                    "id": 25283,
+                    "rate_per_day": 30,
+                    "total_rewards": 0,
+                    "total_days": 173707
+                }
+            ],
+            "rewards_max_spread": 3.5,
+            "rewards_min_size": 100,
+            "market_competitiveness": 6.637719
+        }
+    ],
+    "next_cursor": "LTE=",
+    "limit": 100,
+    "count": 1
+}
